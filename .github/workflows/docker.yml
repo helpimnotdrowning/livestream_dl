@@ -55,7 +55,7 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |            
-            ghcr.io/canofsocks/livestream_dl
+            ghcr.io/helpimnotdrowning/livestream_dl
           #  canofsocks/livestream_dl
           tags: |
             type=edge,branch=main
