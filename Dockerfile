@@ -15,7 +15,7 @@ ARG COMMIT_HASH
 ENV COMMIT_HASH=${COMMIT_HASH}
 
 # 1. Install Alpine-native tools (FFmpeg and Python use these)
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg git
 
 # 2. Copy GLIBC libraries for Deno (from Stage 2)
 # We put them in a dedicated folder to avoid "poisoning" the system
