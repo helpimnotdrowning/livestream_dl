@@ -8,8 +8,9 @@ except ModuleNotFoundError as e:
     from . import getUrls
     from . import download_Live
     from . import YoutubeURL
-import ast
+#import ast
 import json
+
 
 import threading
 kill_all = threading.Event()
@@ -115,6 +116,10 @@ def main(id, resolution='bv+ba/best', options: dict={}, info_dict=None, thread_k
         }
     logger = download_Live.setup_logging(log_level=options.get('log_level', "INFO"), console=options.get('no_console', True), file=options.get('log_file', None), logger_name="Live-DL Downloader", video_id=id, redact_ips=options.get("redact_ips", False), file_options=file_options)
 
+    if options.get("cookies", None):
+        from pathlib import Path
+        if not Path(options.get("cookies")).exists():
+            logger.warning("Cookie file does not exist. Check --cookies option")
     # Initialise yt-dlp logger
     #download_Live.setup_logging(log_level=options.get('ytdlp_log_level', logger.getEffectiveLevel()), console=(not options.get('no_console', False)), file=options.get('log_file', None), file_options=options.get("log_file_options",{}), logger_name="yt-dlp", video_id=options.get("ID"), metadata={"log_type", "default"})
     
@@ -150,6 +155,10 @@ def monitor_channel(options={}):
         }
     logger = download_Live.setup_logging(log_level=options.get('log_level', "INFO"), console=options.get('no_console', True), file=options.get('log_file', None), logger_name="Monitor", redact_ips=options.get("redact_ips", False), file_options=file_options)
     #download_Live.setup_logging(log_level=options.get('ytdlp_log_level', logger.getEffectiveLevel()), console=(not options.get('no_console', False)), file=options.get('log_file', None), file_options=options.get("log_file_options",{}), logger_name="yt-dlp", video_id=options.get("ID"), metadata={"log_type", "default"})
+    if options.get("cookies", None):
+        from pathlib import Path
+        if not Path(options.get("cookies")).exists():
+            logger.warning("Cookie file does not exist. Check --cookies option")
     import monitor_channel
     from typing import Dict
     threads: Dict[str, threading.Thread] = {}
@@ -158,7 +167,7 @@ def monitor_channel(options={}):
     tab = "membership" if options.get("members_only", False) else "streams"
     if not options.get("wait_for_video", None):
         options["wait_for_video"] = (60, None)
-    wait = max((num for num in options.get("wait_for_video", []) if isinstance(num, (int, float))), default=60)
+    wait = max((num for num in options.get("wait_for_video", []) if isinstance(num, (int, float))), default=300)
     while not channel_id.startswith("UC"):
         new_channel_id = monitor_channel.resolve_channel(channel_id) or ""
         # Break if resolved and start search
@@ -363,7 +372,7 @@ if __name__ == "__main__":
 
     monitor_group.add_argument('--upcoming-lookahead', type=int, default=24, help="Maximum time (in hours) to start a downloader instance for a video.")
 
-    monitor_group.add_argument('--playlist-items', type=int, default=50, help="Maximum number of playlist items to check.")
+    monitor_group.add_argument('--playlist-items', type=int, default=3, help="Maximum number of playlist items to check.")
     
     # Parse the arguments
     args = parser.parse_args()
@@ -374,7 +383,7 @@ if __name__ == "__main__":
         force_ipv6() 
 
     # Access the 'ID' value
-    options = vars(args)
+    options: dict = vars(args)
     
     if options.get('ID', None) is None and options.get('json_file', None) is None:
         options['ID'] = str(input("Please enter a video URL: ")).strip()
@@ -415,6 +424,8 @@ if __name__ == "__main__":
     #options['write_thumbnail'] = True
     #options['write_description'] = True
     #options['write_info_json'] = True
+
+    
     
     if options.get("monitor_channel", False) is True:
         monitor_channel(options=options)
