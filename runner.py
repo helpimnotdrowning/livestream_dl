@@ -170,9 +170,11 @@ def monitor_channel(options={}):
     wait = max((num for num in options.get("wait_for_video", []) if isinstance(num, (int, float))), default=300)
     while not channel_id.startswith("UC"):
         new_channel_id = monitor_channel.resolve_channel(channel_id) or ""
+        logger.debug("Found channel ID: {0}".format(new_channel_id))
         # Break if resolved and start search
-        if channel_id.startswith("UC"):
+        if new_channel_id.startswith("UC"):
             channel_id = new_channel_id
+            logger.debug("Found channel ID: {0}".format(channel_id))
             break
         time_to_next = max(wait-(time()-last_check),1)
         logger.debug("Sleeping for {0:.2f}s for next URL resolve attempt".format(time_to_next))
@@ -372,7 +374,7 @@ if __name__ == "__main__":
 
     monitor_group.add_argument('--upcoming-lookahead', type=int, default=24, help="Maximum time (in hours) to start a downloader instance for a video.")
 
-    monitor_group.add_argument('--playlist-items', type=int, default=3, help="Maximum number of playlist items to check.")
+    monitor_group.add_argument('--playlist-items', type=int, default=10, help="Maximum number of playlist items to check.")
     
     # Parse the arguments
     args = parser.parse_args()

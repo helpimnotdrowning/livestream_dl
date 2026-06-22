@@ -22,13 +22,13 @@ def get_upcoming_or_live_videos(channel_id, tab=None, options={}, logger: loggin
     #channel_id = str(channel_id)
     ydl_opts = {
         'quiet': True,
-        #'extract_flat': True, 
+        'extract_flat': True, 
         #'force_generic_extractor': True,
         'sleep_interval': 1,
         'sleep_interval_requests': 1,
         'no_warnings': True,
         'cookiefile': options.get("cookies", None),
-        'playlist_items': '1-{0}'.format(options.get("playlist_items", 3)),
+        'playlist_items': '1-{0}'.format(options.get("playlist_items", 10)),
         #'verbose': True
         #'match_filter': filters
         "logger": YTDLPLogger(logger=logger),
@@ -64,8 +64,14 @@ def get_upcoming_or_live_videos(channel_id, tab=None, options={}, logger: loggin
             upcoming_or_live_videos = []
             printed_first=False
             for video in info['entries']:
-                
-                #print(json.dumps(video, indent=4))
+
+                # Fallback if video availability doesn't exist in extracted info
+                if video.get('live_status', None) is None and video.get('duration') is None:
+                    try:
+                        video = ydl.extract_info(video.get('url'), download=False)
+                    except Exception as e:
+                        logger.error("Unable to find availability information for video {0}: {1}".format(video.get('url'), str(e)))
+                        continue
                     
                 if (video.get('live_status') == 'is_live' or video.get('live_status') == 'post_live' 
                     or (video.get('live_status') == 'is_upcoming' and withinFuture(video.get('release_timestamp', None), **({"lookahead": options["monitor_lookahead"]} if "monitor_lookahead" in options else {})))):
@@ -92,7 +98,7 @@ def resolve_channel(url: str, logger: logging = None):
         if "not currently live" in str(e):
             logger.log(VERBOSE_LEVEL_NUM, "Channel found, but not live: {0}. Waiting until a live stream is found to resolve channel ID".format(e))
             return None
-        logger.warning("Unable to find channel ID with URL search using '{0}'. Attemptiong to use youtube search.")
+        logger.warning("Unable to find channel ID with URL search using '{0}'. Attempting to use youtube search.".format(url))
         channel_id = get_by_name(channel_name=url, logger=logger)
         if channel_id and str(channel_id).startswith("UC"):
             return channel_id
@@ -111,6 +117,15 @@ def get_channel(channel_url: str, logger: logging = None):
     
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(channel_url, download=False)
+
+        # Fallback if there is info extracted, but no channel ID (e.g. the live tab)        
+        if info.get('channel_id', None) is None and info.get('url'):
+            try:
+                info = ydl.extract_info(info.get('url'), download=False)
+                
+            except Exception as e:
+                logger.error("Unable to find availability information for video {0}: {1}".format(info.get('url'), str(e)))
+
         return ydl.sanitize_info(info).get("channel_id", None)
         
 
